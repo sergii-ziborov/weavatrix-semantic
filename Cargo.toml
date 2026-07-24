@@ -1,0 +1,23 @@
+[package]
+name = "weavatrix-semantic"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "Deterministic semantic linking for evidence-carrying Weavatrix graphs"
+license = "MIT"
+repository = "https://github.com/sergii-ziborov/weavatrix-semantic"
+homepage = "https://github.com/sergii-ziborov/weavatrix-semantic"
+documentation = "https://docs.rs/weavatrix-semantic"
+readme = "README.md"
+keywords = ["graph", "semantic-search", "embeddings", "seo", "static-analysis"]
+categories = ["algorithms", "data-structures"]
+
+[dependencies]
+weavatrix-graph = "0.4.0"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = "warn"
+pedantic = "warn"
