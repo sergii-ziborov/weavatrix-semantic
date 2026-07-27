@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+mod display;
 use weavatrix_graph::GraphError;
 
 /// Result type returned by semantic-linking operations.
@@ -24,7 +24,7 @@ pub enum SemanticError {
     NonFiniteVectorValue { node: String, index: usize },
     /// A vector has no direction and cannot be compared with cosine similarity.
     ZeroVector { node: String },
-    /// More vectors were supplied than the exact implementation permits.
+    /// More vectors were supplied than the caller-configured safety bound.
     TooManyVectors { count: usize, maximum: usize },
     /// Two vectors target the same graph node.
     DuplicateNode { node: String },
@@ -38,81 +38,70 @@ pub enum SemanticError {
     },
     /// A platform-sized counter could not be represented in graph metadata.
     NumericOverflow,
+    /// Semantic candidate or report storage could not be reserved.
+    AllocationFailed,
+    /// The vector candidate-pool multiplier must be positive.
+    ZeroCandidatePoolMultiplier,
+    /// A candidate engine returned a key outside the current semantic input.
+    CandidateKeyOutOfRange { key: u64, vector_count: usize },
+    /// An SEO site identifier is empty.
+    EmptySeoSite { node: String },
+    /// An SEO site identifier has leading or trailing whitespace.
+    SeoSiteHasSurroundingWhitespace { node: String },
+    /// An SEO canonical identifier is empty.
+    EmptySeoCanonical { node: String },
+    /// An SEO canonical identifier has leading or trailing whitespace.
+    SeoCanonicalHasSurroundingWhitespace { node: String },
+    /// An SEO language identifier is empty.
+    EmptySeoLanguage { node: String },
+    /// An SEO language identifier has leading or trailing whitespace.
+    SeoLanguageHasSurroundingWhitespace { node: String },
+    /// More than one SEO profile targets the same graph node.
+    DuplicateSeoProfile { node: String },
+    /// A semantic vector has no corresponding SEO profile.
+    MissingSeoProfile { node: String },
+    /// An SEO profile targets a node absent from the graph.
+    SeoProfileMissingGraphNode { node: String },
+    /// The anchor matcher model identifier is empty.
+    EmptyAnchorModel,
+    /// The anchor matcher model identifier has surrounding whitespace.
+    AnchorModelHasSurroundingWhitespace,
+    /// The anchor similarity threshold is non-finite or outside `[0, 1]`.
+    InvalidAnchorSimilarityThreshold,
+    /// At least one anchor suggestion per link must be requested.
+    ZeroAnchorSuggestions,
+    /// A candidate anchor locator is empty.
+    EmptyAnchorLocator { source: String },
+    /// Candidate anchor text is empty.
+    EmptyAnchorText { source: String, locator: String },
+    /// Candidate anchor context is empty.
+    EmptyAnchorContext { source: String, locator: String },
+    /// Candidate anchor text is not present in its supplied source context.
+    AnchorTextOutsideContext { source: String, locator: String },
+    /// Candidate anchor text metadata has surrounding whitespace.
+    AnchorTextHasSurroundingWhitespace {
+        source: String,
+        locator: String,
+        field: &'static str,
+    },
+    /// More than one candidate uses the same source and locator.
+    DuplicateAnchorCandidate { source: String, locator: String },
+    /// A semantic link target has no page vector for anchor matching.
+    MissingAnchorTargetVector { target: String },
+    /// A candidate anchor vector does not match the target-vector dimension.
+    AnchorDimensionMismatch {
+        source: String,
+        locator: String,
+        expected: usize,
+        actual: usize,
+    },
+    /// A semantic edge was produced by another embedding model.
+    AnchorModelMismatch { expected: String, actual: String },
+    /// A semantic edge is missing an attribute required for anchor matching.
+    MissingSemanticEdgeAttribute { attribute: &'static str },
+    /// The first-party vector candidate engine rejected a build or query.
+    #[cfg(feature = "vector-search")]
+    VectorSearch(weavatrix_search_vector::SearchError),
     /// The underlying graph rejected a kind, identifier, provenance, or edge.
     Graph(GraphError),
-}
-
-impl Display for SemanticError {
-    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::EmptyModel => formatter.write_str("embedding model identifier cannot be empty"),
-            Self::ModelHasSurroundingWhitespace => {
-                formatter.write_str("embedding model identifier cannot have surrounding whitespace")
-            }
-            Self::InvalidSimilarityThreshold => {
-                formatter.write_str("minimum cosine similarity must be finite and within [0, 1]")
-            }
-            Self::ZeroTopK => formatter.write_str("top_k must be greater than zero"),
-            Self::ZeroMaxVectors => formatter.write_str("max_vectors must be greater than zero"),
-            Self::EmptyVector { node } => {
-                write!(formatter, "semantic vector for {node} has no dimensions")
-            }
-            Self::NonFiniteVectorValue { node, index } => {
-                write!(
-                    formatter,
-                    "semantic vector for {node} has a non-finite value at dimension {index}"
-                )
-            }
-            Self::ZeroVector { node } => {
-                write!(formatter, "semantic vector for {node} has zero magnitude")
-            }
-            Self::TooManyVectors { count, maximum } => {
-                write!(
-                    formatter,
-                    "exact semantic linker received {count} vectors; configured maximum is {maximum}"
-                )
-            }
-            Self::DuplicateNode { node } => {
-                write!(
-                    formatter,
-                    "multiple semantic vectors target graph node {node}"
-                )
-            }
-            Self::MissingGraphNode { node } => {
-                write!(
-                    formatter,
-                    "semantic vector targets missing graph node {node}"
-                )
-            }
-            Self::DimensionMismatch {
-                node,
-                expected,
-                actual,
-            } => {
-                write!(
-                    formatter,
-                    "semantic vector for {node} has {actual} dimensions; expected {expected}"
-                )
-            }
-            Self::NumericOverflow => {
-                formatter.write_str("semantic-link metadata exceeds supported numeric range")
-            }
-            Self::Graph(error) => Display::fmt(error, formatter),
-        }
-    }
-}
-
-impl std::error::Error for SemanticError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::Graph(error) => Some(error),
-            _ => None,
-        }
-    }
-}
-
-impl From<GraphError> for SemanticError {
-    fn from(error: GraphError) -> Self {
-        Self::Graph(error)
-    }
 }

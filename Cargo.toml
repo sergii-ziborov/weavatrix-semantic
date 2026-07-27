@@ -1,6 +1,6 @@
 [package]
 name = "weavatrix-semantic"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.88"
 description = "Deterministic semantic linking for evidence-carrying Weavatrix graphs"
@@ -12,8 +12,21 @@ readme = "README.md"
 keywords = ["graph", "semantic-search", "embeddings", "seo", "static-analysis"]
 categories = ["algorithms", "data-structures"]
 
+[features]
+default = []
+vector-search = ["dep:weavatrix-search-vector"]
+
 [dependencies]
-weavatrix-graph = "0.4.0"
+weavatrix-graph = "0.6.0"
+weavatrix-search-vector = { version = "0.3.0", optional = true }
+
+[[example]]
+name = "vector_benchmark"
+required-features = ["vector-search"]
+
+[[example]]
+name = "seo_benchmark"
+required-features = ["vector-search"]
 
 [lints.rust]
 unsafe_code = "forbid"

@@ -1,7 +1,7 @@
 use crate::{Result, SemanticError};
 use weavatrix_graph::Confidence;
 
-/// Determines how directed top-K choices become symmetric semantic pairs.
+/// Determines how directed top-K choices become semantic graph edges.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum SelectionMode {
     /// Keep only pairs where both endpoints selected each other.
@@ -9,6 +9,8 @@ pub enum SelectionMode {
     Mutual,
     /// Keep pairs where either endpoint selected the other.
     Union,
+    /// Keep each source's selected targets as directional recommendations.
+    Directed,
 }
 
 impl SelectionMode {
@@ -16,11 +18,12 @@ impl SelectionMode {
         match self {
             Self::Mutual => "mutual",
             Self::Union => "union",
+            Self::Directed => "directed",
         }
     }
 }
 
-/// Configuration for exact cosine semantic linking.
+/// Model-specific semantic-linking configuration shared by every backend.
 #[derive(Debug, Clone, PartialEq)]
 pub struct LinkConfig {
     model: String,
@@ -41,7 +44,7 @@ impl LinkConfig {
             top_k,
             selection: SelectionMode::Mutual,
             confidence: Confidence::Low,
-            max_vectors: 5_000,
+            max_vectors: usize::MAX,
         }
     }
 
@@ -59,7 +62,11 @@ impl LinkConfig {
         self
     }
 
-    /// Sets a hard bound for the exact O(n²) implementation.
+    /// Sets an optional caller-defined safety bound on the input size.
+    ///
+    /// The default is [`usize::MAX`], so the linker does not impose a fixed
+    /// vector-count limit. This guard can still be useful for controlling the
+    /// quadratic comparison cost in latency-sensitive applications.
     #[must_use]
     pub const fn with_max_vectors(mut self, max_vectors: usize) -> Self {
         self.max_vectors = max_vectors;
@@ -96,7 +103,7 @@ impl LinkConfig {
         self.confidence
     }
 
-    /// Maximum accepted vector count.
+    /// Maximum accepted vector count, or [`usize::MAX`] when unbounded.
     #[must_use]
     pub const fn max_vectors(&self) -> usize {
         self.max_vectors

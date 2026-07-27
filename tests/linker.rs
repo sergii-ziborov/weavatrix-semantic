@@ -3,8 +3,8 @@ use weavatrix_graph::{
     NodeKind, Provenance,
 };
 use weavatrix_semantic::{
-    LinkConfig, SEMANTIC_EDGE_KIND, SEMANTIC_EXTRACTOR, SelectionMode, SemanticError,
-    SemanticLinker, SemanticVector,
+    CandidateBackend, LinkConfig, SEMANTIC_EDGE_KIND, SEMANTIC_EXTRACTOR, SelectionMode,
+    SemanticError, SemanticLinker, SemanticVector,
 };
 
 fn page_graph(ids: &[&str]) -> Graph {
@@ -37,6 +37,7 @@ fn links_mutual_neighbors_with_evidence_and_metadata() {
     assert_eq!(report.dimension(), 2);
     assert_eq!(report.comparisons(), 3);
     assert_eq!(report.pair_count(), 1);
+    assert_eq!(report.candidate_backend(), CandidateBackend::Exact);
     assert_eq!(report.edges().len(), 2);
     for edge in report.edges() {
         assert_eq!(edge.kind.as_str(), SEMANTIC_EDGE_KIND);
@@ -46,6 +47,14 @@ fn links_mutual_neighbors_with_evidence_and_metadata() {
         assert_eq!(
             edge.attributes.get("model"),
             Some(&AttributeValue::String("embedding-v1".to_owned()))
+        );
+        assert_eq!(
+            edge.attributes.get("candidate_backend"),
+            Some(&AttributeValue::String("exact".to_owned()))
+        );
+        assert_eq!(
+            edge.attributes.get("candidate_exact"),
+            Some(&AttributeValue::Bool(true))
         );
         assert!(matches!(
             edge.attributes.get("similarity"),
@@ -146,6 +155,54 @@ fn rejects_invalid_vectors_and_configuration() {
         SemanticLinker::new(LinkConfig::new("model", 0.8, 0)),
         Err(SemanticError::ZeroTopK)
     ));
+    assert!(matches!(
+        SemanticLinker::new(LinkConfig::new("model", 0.8, 2).with_max_vectors(0)),
+        Err(SemanticError::ZeroMaxVectors)
+    ));
+}
+
+#[test]
+fn has_no_default_vector_count_limit_but_honors_caller_bound() {
+    assert_eq!(
+        LinkConfig::new("embedding-v1", 0.8, 2).max_vectors(),
+        usize::MAX
+    );
+
+    let graph = page_graph(&["page:/a", "page:/b", "page:/c"]);
+    let vectors = vec![
+        vector("page:/a", &[1.0, 0.0]),
+        vector("page:/b", &[0.9, 0.1]),
+        vector("page:/c", &[0.8, 0.2]),
+    ];
+    let linker =
+        SemanticLinker::new(LinkConfig::new("embedding-v1", 0.8, 2).with_max_vectors(2)).unwrap();
+
+    assert!(matches!(
+        linker.link(&graph, &vectors),
+        Err(SemanticError::TooManyVectors {
+            count: 3,
+            maximum: 2
+        })
+    ));
+}
+
+#[test]
+fn equal_scores_use_node_id_as_the_stable_top_k_tiebreaker() {
+    let graph = page_graph(&["page:/d", "page:/c", "page:/b", "page:/a"]);
+    let vectors = vec![
+        vector("page:/d", &[1.0, 0.0]),
+        vector("page:/c", &[1.0, 0.0]),
+        vector("page:/b", &[1.0, 0.0]),
+        vector("page:/a", &[1.0, 0.0]),
+    ];
+    let mutual = SemanticLinker::new(LinkConfig::new("embedding-v1", 1.0, 1)).unwrap();
+    let union = SemanticLinker::new(
+        LinkConfig::new("embedding-v1", 1.0, 1).with_selection(SelectionMode::Union),
+    )
+    .unwrap();
+
+    assert_eq!(mutual.link(&graph, &vectors).unwrap().pair_count(), 1);
+    assert_eq!(union.link(&graph, &vectors).unwrap().pair_count(), 3);
 }
 
 #[test]
