@@ -1,6 +1,6 @@
 [package]
 name = "weavatrix-semantic"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 rust-version = "1.88"
 description = "Deterministic semantic linking for evidence-carrying Weavatrix graphs"
@@ -9,6 +9,7 @@ repository = "https://github.com/sergii-ziborov/weavatrix-semantic"
 homepage = "https://github.com/sergii-ziborov/weavatrix-semantic"
 documentation = "https://docs.rs/weavatrix-semantic"
 readme = "README.md"
+publish = ["crates-io"]
 keywords = ["graph", "semantic-search", "embeddings", "seo", "static-analysis"]
 categories = ["algorithms", "data-structures"]
 

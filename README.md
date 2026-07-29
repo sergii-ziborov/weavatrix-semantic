@@ -15,6 +15,16 @@ selection, applies explicit link policy, ranks extracted anchor placements,
 and emits `semantic_similarity` evidence with model, score, dimension,
 selection, rank, linker version, and confidence metadata.
 
+## Installation
+
+```toml
+[dependencies]
+weavatrix-semantic = "0.2.1"
+```
+
+Enable the optional first-party vector candidate backend with the
+`vector-search` feature.
+
 ## Why a separate crate?
 
 `weavatrix-graph` owns graph integrity, serialization, and graph algorithms.
@@ -124,6 +134,8 @@ Enable the `vector-search` feature after adding the first-party
 `weavatrix-search-vector` crate:
 
 ```rust
+# #[cfg(feature = "vector-search")]
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
 use weavatrix_semantic::{
     LinkConfig, VectorCandidateConfig, VectorSemanticLinker,
 };
@@ -139,7 +151,10 @@ assert_eq!(
     report.candidate_backend().as_str(),
     "weavatrix_search_vector"
 );
-# Ok::<(), Box<dyn std::error::Error>>(())
+# Ok(())
+# }
+# #[cfg(not(feature = "vector-search"))]
+# fn main() {}
 ```
 
 Vector Search owns only deterministic HNSW candidate coverage. Semantic still

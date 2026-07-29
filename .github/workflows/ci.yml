@@ -37,3 +37,4 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
       - run: cargo test --locked --all-features
+      - run: cargo test --locked --no-default-features

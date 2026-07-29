@@ -84,7 +84,7 @@ checksum = "6de16c91095ded573285380a2741b072b99a8ea5f555c21c5889237a2a25f2d2"
 
 [[package]]
 name = "weavatrix-semantic"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "weavatrix-graph",
  "weavatrix-search-vector",
