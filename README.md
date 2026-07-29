@@ -189,6 +189,22 @@ The backend-only semantic-pair benchmark remains available with:
 cargo run --release --features vector-search --example vector_benchmark -- 10000
 ```
 
+## Releasing
+
+Releases are published from immutable version tags through crates.io trusted
+publishing. No long-lived `CARGO_REGISTRY_TOKEN` repository secret is used.
+
+1. Update the version in `Cargo.toml` and regenerate `Cargo.lock`.
+2. Run the local quality and package gates.
+3. Commit and push the release changes.
+4. Create and push the matching tag, for example `v0.3.0`.
+
+Pushing `vX.Y.Z` starts the `Publish crate` workflow. The workflow rejects a tag
+that does not exactly match the package version, runs the full quality gate and
+`cargo publish --dry-run`, then obtains a short-lived OIDC token in the
+`crates-io` GitHub environment and publishes the verified package. A manual
+rerun must select the same version tag, not `main`.
+
 ## Selection semantics
 
 Cosine similarity itself is symmetric, while a top-K neighborhood and an SEO
