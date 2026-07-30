@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## 0.2.2 - 2026-07-30
+
+- Normalize anchor, error, linker, and policy modules to one idiomatic Rust
+  module-tree form without changing public paths.
+- Add a strict modular architecture contract with 300-line files, 100-line
+  functions, zero runtime cycles, no baseline, and no exceptions.
+- Track `weavatrix-graph` 0.6.2 and the optional
+  `weavatrix-search-vector` 0.3.1 candidate backend.
+- Document the exact boundary between graph integrity, semantic policy,
+  candidate retrieval, source acquisition, and embedding providers.
+
+## 0.2.1 - 2026-07-29
+
+- Prepare the semantic and SEO linking library for immutable crates.io
+  publication with pinned CI actions and trusted publishing.
+
 ## 0.2.0 - 2026-07-27
 
 - Added deterministic exact cosine top-K semantic linking.

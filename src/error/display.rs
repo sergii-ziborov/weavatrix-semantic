@@ -3,165 +3,208 @@ use std::fmt::{Display, Formatter};
 use weavatrix_graph::GraphError;
 
 impl Display for SemanticError {
-    #[allow(clippy::too_many_lines)]
     fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+        if let Some(result) = [
+            format_vector_error(self, formatter),
+            format_seo_error(self, formatter),
+            format_anchor_error(self, formatter),
+        ]
+        .into_iter()
+        .flatten()
+        .next()
+        {
+            return result;
+        }
         match self {
-            Self::EmptyModel => formatter.write_str("embedding model identifier cannot be empty"),
-            Self::ModelHasSurroundingWhitespace => {
-                formatter.write_str("embedding model identifier cannot have surrounding whitespace")
-            }
-            Self::InvalidSimilarityThreshold => {
-                formatter.write_str("minimum cosine similarity must be finite and within [0, 1]")
-            }
-            Self::ZeroTopK => formatter.write_str("top_k must be greater than zero"),
-            Self::ZeroMaxVectors => formatter.write_str("max_vectors must be greater than zero"),
-            Self::EmptyVector { node } => {
-                write!(formatter, "semantic vector for {node} has no dimensions")
-            }
-            Self::NonFiniteVectorValue { node, index } => write!(
-                formatter,
-                "semantic vector for {node} has a non-finite value at dimension {index}"
-            ),
-            Self::ZeroVector { node } => {
-                write!(formatter, "semantic vector for {node} has zero magnitude")
-            }
-            Self::TooManyVectors { count, maximum } => write!(
-                formatter,
-                "semantic linker received {count} vectors; configured maximum is {maximum}"
-            ),
-            Self::DuplicateNode { node } => {
-                write!(
-                    formatter,
-                    "multiple semantic vectors target graph node {node}"
-                )
-            }
-            Self::MissingGraphNode { node } => {
-                write!(
-                    formatter,
-                    "semantic vector targets missing graph node {node}"
-                )
-            }
-            Self::DimensionMismatch {
-                node,
-                expected,
-                actual,
-            } => write!(
-                formatter,
-                "semantic vector for {node} has {actual} dimensions; expected {expected}"
-            ),
-            Self::NumericOverflow => {
-                formatter.write_str("semantic-link metadata exceeds supported numeric range")
-            }
-            Self::AllocationFailed => {
-                formatter.write_str("semantic-link storage allocation failed")
-            }
-            Self::ZeroCandidatePoolMultiplier => {
-                formatter.write_str("vector candidate-pool multiplier must be greater than zero")
-            }
-            Self::CandidateKeyOutOfRange { key, vector_count } => write!(
-                formatter,
-                "vector candidate key {key} is outside semantic input of {vector_count} vectors"
-            ),
-            Self::EmptySeoSite { node } => {
-                write!(formatter, "SEO site identifier for {node} cannot be empty")
-            }
-            Self::SeoSiteHasSurroundingWhitespace { node } => write!(
-                formatter,
-                "SEO site identifier for {node} cannot have surrounding whitespace"
-            ),
-            Self::EmptySeoCanonical { node } => {
-                write!(
-                    formatter,
-                    "SEO canonical identifier for {node} cannot be empty"
-                )
-            }
-            Self::SeoCanonicalHasSurroundingWhitespace { node } => write!(
-                formatter,
-                "SEO canonical identifier for {node} cannot have surrounding whitespace"
-            ),
-            Self::EmptySeoLanguage { node } => {
-                write!(
-                    formatter,
-                    "SEO language identifier for {node} cannot be empty"
-                )
-            }
-            Self::SeoLanguageHasSurroundingWhitespace { node } => write!(
-                formatter,
-                "SEO language identifier for {node} cannot have surrounding whitespace"
-            ),
-            Self::DuplicateSeoProfile { node } => {
-                write!(formatter, "multiple SEO profiles target graph node {node}")
-            }
-            Self::MissingSeoProfile { node } => {
-                write!(formatter, "semantic vector for {node} has no SEO profile")
-            }
-            Self::SeoProfileMissingGraphNode { node } => {
-                write!(formatter, "SEO profile targets missing graph node {node}")
-            }
-            Self::EmptyAnchorModel => {
-                formatter.write_str("anchor embedding model identifier cannot be empty")
-            }
-            Self::AnchorModelHasSurroundingWhitespace => formatter
-                .write_str("anchor embedding model identifier cannot have surrounding whitespace"),
-            Self::InvalidAnchorSimilarityThreshold => formatter
-                .write_str("minimum anchor cosine similarity must be finite and within [0, 1]"),
-            Self::ZeroAnchorSuggestions => {
-                formatter.write_str("maximum anchor suggestions must be greater than zero")
-            }
-            Self::EmptyAnchorLocator { source } => write!(
-                formatter,
-                "anchor candidate for {source} has an empty locator"
-            ),
-            Self::EmptyAnchorText { source, locator } => write!(
-                formatter,
-                "anchor candidate {source} at {locator} has empty anchor text"
-            ),
-            Self::EmptyAnchorContext { source, locator } => write!(
-                formatter,
-                "anchor candidate {source} at {locator} has empty context"
-            ),
-            Self::AnchorTextOutsideContext { source, locator } => write!(
-                formatter,
-                "anchor candidate {source} at {locator} has anchor text outside its context"
-            ),
-            Self::AnchorTextHasSurroundingWhitespace {
-                source,
-                locator,
-                field,
-            } => write!(
-                formatter,
-                "anchor candidate {source} at {locator} has surrounding whitespace in {field}"
-            ),
-            Self::DuplicateAnchorCandidate { source, locator } => write!(
-                formatter,
-                "multiple anchor candidates target {source} at {locator}"
-            ),
-            Self::MissingAnchorTargetVector { target } => write!(
-                formatter,
-                "semantic link target {target} has no vector for anchor matching"
-            ),
-            Self::AnchorDimensionMismatch {
-                source,
-                locator,
-                expected,
-                actual,
-            } => write!(
-                formatter,
-                "anchor candidate {source} at {locator} has {actual} dimensions; expected {expected}"
-            ),
-            Self::AnchorModelMismatch { expected, actual } => write!(
-                formatter,
-                "semantic edge uses embedding model {actual}; anchor matcher expects {expected}"
-            ),
-            Self::MissingSemanticEdgeAttribute { attribute } => write!(
-                formatter,
-                "semantic edge is missing required {attribute} attribute"
-            ),
             #[cfg(feature = "vector-search")]
             Self::VectorSearch(error) => Display::fmt(error, formatter),
             Self::Graph(error) => Display::fmt(error, formatter),
+            _ => formatter.write_str("unclassified semantic error"),
         }
     }
+}
+
+fn format_vector_error(
+    error: &SemanticError,
+    formatter: &mut Formatter<'_>,
+) -> Option<std::fmt::Result> {
+    Some(match error {
+        SemanticError::EmptyModel => {
+            formatter.write_str("embedding model identifier cannot be empty")
+        }
+        SemanticError::ModelHasSurroundingWhitespace => {
+            formatter.write_str("embedding model identifier cannot have surrounding whitespace")
+        }
+        SemanticError::InvalidSimilarityThreshold => {
+            formatter.write_str("minimum cosine similarity must be finite and within [0, 1]")
+        }
+        SemanticError::ZeroTopK => formatter.write_str("top_k must be greater than zero"),
+        SemanticError::ZeroMaxVectors => {
+            formatter.write_str("max_vectors must be greater than zero")
+        }
+        SemanticError::EmptyVector { node } => {
+            write!(formatter, "semantic vector for {node} has no dimensions")
+        }
+        SemanticError::NonFiniteVectorValue { node, index } => write!(
+            formatter,
+            "semantic vector for {node} has a non-finite value at dimension {index}"
+        ),
+        SemanticError::ZeroVector { node } => {
+            write!(formatter, "semantic vector for {node} has zero magnitude")
+        }
+        SemanticError::TooManyVectors { count, maximum } => write!(
+            formatter,
+            "semantic linker received {count} vectors; configured maximum is {maximum}"
+        ),
+        SemanticError::DuplicateNode { node } => {
+            write!(
+                formatter,
+                "multiple semantic vectors target graph node {node}"
+            )
+        }
+        SemanticError::MissingGraphNode { node } => {
+            write!(
+                formatter,
+                "semantic vector targets missing graph node {node}"
+            )
+        }
+        SemanticError::DimensionMismatch {
+            node,
+            expected,
+            actual,
+        } => write!(
+            formatter,
+            "semantic vector for {node} has {actual} dimensions; expected {expected}"
+        ),
+        SemanticError::NumericOverflow => {
+            formatter.write_str("semantic-link metadata exceeds supported numeric range")
+        }
+        SemanticError::AllocationFailed => {
+            formatter.write_str("semantic-link storage allocation failed")
+        }
+        SemanticError::ZeroCandidatePoolMultiplier => {
+            formatter.write_str("vector candidate-pool multiplier must be greater than zero")
+        }
+        SemanticError::CandidateKeyOutOfRange { key, vector_count } => write!(
+            formatter,
+            "vector candidate key {key} is outside semantic input of {vector_count} vectors"
+        ),
+        _ => return None,
+    })
+}
+
+fn format_seo_error(
+    error: &SemanticError,
+    formatter: &mut Formatter<'_>,
+) -> Option<std::fmt::Result> {
+    Some(match error {
+        SemanticError::EmptySeoSite { node } => {
+            write!(formatter, "SEO site identifier for {node} cannot be empty")
+        }
+        SemanticError::SeoSiteHasSurroundingWhitespace { node } => write!(
+            formatter,
+            "SEO site identifier for {node} cannot have surrounding whitespace"
+        ),
+        SemanticError::EmptySeoCanonical { node } => {
+            write!(
+                formatter,
+                "SEO canonical identifier for {node} cannot be empty"
+            )
+        }
+        SemanticError::SeoCanonicalHasSurroundingWhitespace { node } => write!(
+            formatter,
+            "SEO canonical identifier for {node} cannot have surrounding whitespace"
+        ),
+        SemanticError::EmptySeoLanguage { node } => {
+            write!(
+                formatter,
+                "SEO language identifier for {node} cannot be empty"
+            )
+        }
+        SemanticError::SeoLanguageHasSurroundingWhitespace { node } => write!(
+            formatter,
+            "SEO language identifier for {node} cannot have surrounding whitespace"
+        ),
+        SemanticError::DuplicateSeoProfile { node } => {
+            write!(formatter, "multiple SEO profiles target graph node {node}")
+        }
+        SemanticError::MissingSeoProfile { node } => {
+            write!(formatter, "semantic vector for {node} has no SEO profile")
+        }
+        SemanticError::SeoProfileMissingGraphNode { node } => {
+            write!(formatter, "SEO profile targets missing graph node {node}")
+        }
+        _ => return None,
+    })
+}
+
+fn format_anchor_error(
+    error: &SemanticError,
+    formatter: &mut Formatter<'_>,
+) -> Option<std::fmt::Result> {
+    Some(match error {
+        SemanticError::EmptyAnchorModel => {
+            formatter.write_str("anchor embedding model identifier cannot be empty")
+        }
+        SemanticError::AnchorModelHasSurroundingWhitespace => formatter
+            .write_str("anchor embedding model identifier cannot have surrounding whitespace"),
+        SemanticError::InvalidAnchorSimilarityThreshold => {
+            formatter.write_str("minimum anchor cosine similarity must be finite and within [0, 1]")
+        }
+        SemanticError::ZeroAnchorSuggestions => {
+            formatter.write_str("maximum anchor suggestions must be greater than zero")
+        }
+        SemanticError::EmptyAnchorLocator { source } => write!(
+            formatter,
+            "anchor candidate for {source} has an empty locator"
+        ),
+        SemanticError::EmptyAnchorText { source, locator } => write!(
+            formatter,
+            "anchor candidate {source} at {locator} has empty anchor text"
+        ),
+        SemanticError::EmptyAnchorContext { source, locator } => write!(
+            formatter,
+            "anchor candidate {source} at {locator} has empty context"
+        ),
+        SemanticError::AnchorTextOutsideContext { source, locator } => write!(
+            formatter,
+            "anchor candidate {source} at {locator} has anchor text outside its context"
+        ),
+        SemanticError::AnchorTextHasSurroundingWhitespace {
+            source,
+            locator,
+            field,
+        } => write!(
+            formatter,
+            "anchor candidate {source} at {locator} has surrounding whitespace in {field}"
+        ),
+        SemanticError::DuplicateAnchorCandidate { source, locator } => write!(
+            formatter,
+            "multiple anchor candidates target {source} at {locator}"
+        ),
+        SemanticError::MissingAnchorTargetVector { target } => write!(
+            formatter,
+            "semantic link target {target} has no vector for anchor matching"
+        ),
+        SemanticError::AnchorDimensionMismatch {
+            source,
+            locator,
+            expected,
+            actual,
+        } => write!(
+            formatter,
+            "anchor candidate {source} at {locator} has {actual} dimensions; expected {expected}"
+        ),
+        SemanticError::AnchorModelMismatch { expected, actual } => write!(
+            formatter,
+            "semantic edge uses embedding model {actual}; anchor matcher expects {expected}"
+        ),
+        SemanticError::MissingSemanticEdgeAttribute { attribute } => write!(
+            formatter,
+            "semantic edge is missing required {attribute} attribute"
+        ),
+        _ => return None,
+    })
 }
 
 impl std::error::Error for SemanticError {

@@ -69,22 +69,22 @@ checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 
 [[package]]
 name = "weavatrix-graph"
-version = "0.6.0"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "582aae10d63d718386e4229b1f8b99232872ace919e76d45489d14473016e0ab"
+checksum = "4875fdbbd4799ba7e9347f1f0d8428befd35fd8ce490fd2cf9a72fffe9756b7e"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "weavatrix-search-vector"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6de16c91095ded573285380a2741b072b99a8ea5f555c21c5889237a2a25f2d2"
+checksum = "75e19f5fc55f1aabc40da953aeb33b7771f34eb34870d8cd60322fe077224e55"
 
 [[package]]
 name = "weavatrix-semantic"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "weavatrix-graph",
  "weavatrix-search-vector",

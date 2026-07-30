@@ -19,7 +19,7 @@ selection, rank, linker version, and confidence metadata.
 
 ```toml
 [dependencies]
-weavatrix-semantic = "0.2.1"
+weavatrix-semantic = "0.2.2"
 ```
 
 Enable the optional first-party vector candidate backend with the
@@ -189,6 +189,26 @@ The backend-only semantic-pair benchmark remains available with:
 cargo run --release --features vector-search --example vector_benchmark -- 10000
 ```
 
+## Architecture
+
+`weavatrix-semantic` is a modular policy and inference library, not an
+embedding model or a content crawler:
+
+| Layer | Responsibility |
+| --- | --- |
+| `model` | validated vectors, configuration, errors, and stable report data |
+| `policy` | deterministic selection rules, SEO eligibility, and anchor ranking |
+| `engine` | exact cosine scoring, top-K reconciliation, evidence edges, and relinking |
+| `vector adapter` | optional first-party HNSW candidate retrieval followed by exact rescoring |
+| `facade` | the stable public Rust API |
+
+The graph core stays below this crate; source acquisition and embedding
+providers stay above it. The optional vector backend proposes candidates only:
+Semantic retains policy, exact emitted-edge scores, stable ordering, and
+provenance. A checked-in strict contract enforces 300-line files, 100-line
+functions, zero runtime cycles, no mixed Rust module ownership, and no
+baseline or exceptions.
+
 ## Releasing
 
 Releases are published from immutable version tags through crates.io trusted
@@ -197,7 +217,7 @@ publishing. No long-lived `CARGO_REGISTRY_TOKEN` repository secret is used.
 1. Update the version in `Cargo.toml` and regenerate `Cargo.lock`.
 2. Run the local quality and package gates.
 3. Commit and push the release changes.
-4. Create and push the matching tag, for example `v0.3.0`.
+4. Create and push the matching tag, for example `v0.2.2`.
 
 Pushing `vX.Y.Z` starts the `Publish crate` workflow. The workflow rejects a tag
 that does not exactly match the package version, runs the full quality gate and

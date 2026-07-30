@@ -1,0 +1,63 @@
+{
+  "architectureContractV": 1,
+  "name": "Weavatrix Semantic modular policy architecture",
+  "style": "layered-library-with-adapters",
+  "enforcement": "strict",
+  "components": [
+    {
+      "id": "model",
+      "name": "Validated semantic model and configuration",
+      "paths": ["src/config.rs", "src/error", "src/vector.rs"]
+    },
+    {
+      "id": "policy",
+      "name": "Selection, SEO, and anchor policy",
+      "paths": ["src/anchor", "src/policy"]
+    },
+    {
+      "id": "engine",
+      "name": "Exact scoring and evidence linking",
+      "paths": ["src/linker"]
+    },
+    {
+      "id": "vector-adapter",
+      "name": "Optional first-party candidate backend",
+      "paths": ["src/vector_linker.rs"]
+    },
+    {
+      "id": "facade",
+      "name": "Public crate facade",
+      "paths": ["src/lib.rs"]
+    },
+    {
+      "id": "verification",
+      "name": "Tests, examples, and benchmarks",
+      "paths": ["tests", "examples", "benches"]
+    }
+  ],
+  "dependencyRules": [
+    {
+      "id": "runtime-does-not-depend-on-verification",
+      "action": "forbid",
+      "from": ["model", "policy", "engine", "vector-adapter", "facade"],
+      "to": ["verification"],
+      "kinds": ["imports", "re_exports", "depends_on"]
+    }
+  ],
+  "budgets": {
+    "runtimeCycles": 0,
+    "maxFileLoc": 300,
+    "maxFunctionLoc": 100
+  },
+  "technologies": {
+    "required": ["rust"],
+    "forbidden": ["unsafe-rust"]
+  },
+  "exceptions": [],
+  "ratchet": {
+    "baseline": {
+      "fingerprints": [],
+      "metrics": {}
+    }
+  }
+}
